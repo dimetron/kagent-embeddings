@@ -1,0 +1,35 @@
+[package]
+name = "embeddings-service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Web framework
+axum = { version = "0.7", features = ["json"] }
+tokio = { version = "1.0", features = ["full"] }
+tower = "0.5.2"
+tower-http = { version = "0.5", features = ["cors"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# ML/NLP
+rust-bert = { version = "0.23.0", features = ["download-libtorch"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+[dev-dependencies]
+axum-test = "17.3.0"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+
+# Optional: Optimize for specific CPU features
+# Uncomment the following lines for maximum performance on your target CPU
+# [build]
+# rustflags = ["-C", "target-cpu=native"]
