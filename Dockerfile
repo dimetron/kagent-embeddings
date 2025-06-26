@@ -1,5 +1,5 @@
 # Multi-stage build for optimized production image
-FROM rust:1.87-slim as builder
+FROM rust:1.87-slim AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy dependency files first for better caching
-COPY Cargo.toml Cargo.lock /
+COPY Cargo.toml Cargo.lock ./
 
 # Create a dummy main.rs to build dependencies
 RUN mkdir src && echo "fn main() {}" > src/main.rs
