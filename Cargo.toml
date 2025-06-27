@@ -15,7 +15,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
 # ML/NLP
-rust-bert = { version = "0.23.0", features = ["download-libtorch"] }
+fastembed = "4.9.1"
 
 # Logging
 tracing = "0.1"

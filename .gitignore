@@ -28,6 +28,7 @@ Thumbs.db
 # Model cache (rust-bert)
 .rustbert/
 .cache/
+.fastembed_cache/
 
 # Docker
 .dockerignore

@@ -6,9 +6,7 @@ use axum::{
     Router,
 };
 
-use rust_bert::pipelines::sentence_embeddings::{
-    SentenceEmbeddingsBuilder, SentenceEmbeddingsModelType,
-};
+use fastembed::TextEmbedding;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -51,7 +49,7 @@ struct HealthResponse {
 
 // Application state
 struct AppState {
-    models: HashMap<String, Arc<Mutex<rust_bert::pipelines::sentence_embeddings::SentenceEmbeddingsModel>>>,
+    models: HashMap<String, Arc<Mutex<TextEmbedding>>>,
 }
 
 impl AppState {
@@ -63,8 +61,7 @@ impl AppState {
 
         // Set-up sentence embeddings model
         let model = tokio::task::spawn_blocking(|| {
-            SentenceEmbeddingsBuilder::remote(SentenceEmbeddingsModelType::AllMiniLmL6V2)
-                .create_model()
+            TextEmbedding::try_new(Default::default())
         }).await??;
         models.insert("all-minilm-l6-v2".to_string(), Arc::new(Mutex::new(model)));
 
@@ -110,12 +107,9 @@ async fn embeddings_post(
         ));
     }
 
-    // Convert Vec<String> to Vec<&str> for the model
-    let text_refs: Vec<&str> = request.texts.iter().map(|s| s.as_str()).collect();
-
     let embeddings = {
         let model_guard = model.lock().await;
-        model_guard.encode(&text_refs).map_err(|e| {
+        model_guard.embed(request.texts, None).map_err(|e| {
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse {

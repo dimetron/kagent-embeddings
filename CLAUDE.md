@@ -4,33 +4,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Rust-based embeddings service that provides sentence embeddings via a REST API. The service uses `rust-bert` with the all-MiniLM-L6-v2 model to generate 384-dimensional embeddings. It's built with Axum for the web framework and designed for high-performance NLP workloads.
+This is a Rust-based embeddings service that provides sentence embeddings via a REST API. The service uses `fastembed-rs` with the all-MiniLM-L6-v2 model to generate 384-dimensional embeddings. It's built with Axum for the web framework and designed for high-performance NLP workloads.
 
 ## Development Commands
 
 ### Building and Running
 - `cargo build` - Build in debug mode
 - `cargo build --release` - Build optimized release version
-- `cargo run` - Run the service locally (listens on port 3000)
+- `cargo run` - Run the service locally (listens on port 9000)
 - `cargo test` - Run unit tests
 - `cargo check` - Quick syntax and type checking
 
 ### Docker Development
 - `docker build -t embeddings-service .` - Build Docker image
-- `docker run -p 3000:3000 embeddings-service` - Run container
+- `docker run -p 9000:9000 embeddings-service` - Run container
 - `docker-compose up -d` - Start with docker-compose
 - `docker-compose logs -f embeddings-service` - View logs
 - `docker-compose down` - Stop services
 
 ### Production Deployment
 - `docker-compose --profile production up -d` - Deploy with nginx reverse proxy
-- `docker build --build-arg TORCH_CUDA_VERSION=cu124 -t embeddings-service-gpu .` - Build with GPU support
+- `docker build -f Dockerfile.cuda -t embeddings-service-gpu .` - Build with GPU support
 
 ## Architecture
 
 ### Core Components
 - **Main Application** (`src/main.rs`): Axum-based REST API server with CORS support
-- **Model Management**: Uses `rust-bert` SentenceEmbeddingsModel with async mutex protection
+- **Model Management**: Uses `fastembed-rs` TextEmbedding with async mutex protection
 - **Request/Response Types**: Structured with serde for JSON serialization
 - **State Management**: Arc-wrapped AppState containing model instances
 
@@ -41,14 +41,14 @@ This is a Rust-based embeddings service that provides sentence embeddings via a 
 
 ### Model Configuration
 - Default model: all-MiniLM-L6-v2 (384-dimensional embeddings)
-- Models cached in `~/.cache/.rustbert` or `/app/.cache/.rustbert` in Docker
+- Models cached in `~/.cache/fastembed` or `/app/.cache/fastembed` in Docker
 - Additional models can be added in `AppState::new()` method
 
 ### Performance Characteristics
-- LibTorch backend with automatic download during build (~500MB for CPU, ~2GB for CUDA)
+- ONNX Runtime backend with automatic model download during first run
 - Thread-safe model access with async mutex
-- 2-4x faster text generation compared to Python equivalents
-- Memory-efficient with Docker multi-stage builds (~200MB final image)
+- Fast inference with optimized ONNX models
+- Memory-efficient with Docker multi-stage builds
 
 ### Docker Architecture
 - Multi-stage build: builder stage (Rust compilation) + runtime stage (Debian slim)
@@ -58,9 +58,8 @@ This is a Rust-based embeddings service that provides sentence embeddings via a 
 - Optional nginx reverse proxy for production
 
 ## Environment Variables
-- `PORT` - Server port (default: 3000)
+- `PORT` - Server port (default: 9000)
 - `RUST_LOG` - Logging level (default: info)
-- `TORCH_CUDA_VERSION` - CUDA version for GPU builds (e.g., cu124)
 
 ## Testing
 - Unit tests in `src/main.rs` using `axum-test`
@@ -68,8 +67,8 @@ This is a Rust-based embeddings service that provides sentence embeddings via a 
 - Models must be loaded for tests (may take time on first run)
 
 ## Performance Notes
-- First build downloads LibTorch (5-15 minutes)
+- First run downloads ONNX models (1-2 minutes depending on connection)
 - Model loading happens at startup (check logs for "Models loaded successfully!")
 - Batch processing recommended for multiple texts
-- GPU acceleration available with CUDA builds (6x improvement)
-- Memory requirements: 512MB minimum, 2GB recommended for production
+- GPU acceleration available with CUDA builds
+- Memory requirements: 256MB minimum, 1GB recommended for production
